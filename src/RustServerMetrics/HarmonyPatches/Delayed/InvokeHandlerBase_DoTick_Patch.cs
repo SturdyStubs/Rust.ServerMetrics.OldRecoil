@@ -19,16 +19,14 @@ internal static class InvokeHandlerBase_DoTick_Patch
 
     private static readonly double TicksToMs = 1000.0 / Stopwatch.Frequency;
 
-    private static readonly CodeMatch[] NeedleSequenceToFind =
-    [
-        CodeMatch.LoadsField(AccessTools.Field(typeof(InvokeAction), nameof(InvokeAction.action))),
-        CodeMatch.Calls(AccessTools.Method(typeof(Action), nameof(Action.Invoke)))
-    ];
+    private static readonly FieldInfo InvokeActionField =
+        AccessTools.Field(typeof(InvokeAction), nameof(InvokeAction.action));
 
-    private static readonly CodeInstruction[] SequenceToInject =
-    [
-        new(OpCodes.Call, AccessTools.Method(typeof(InvokeHandlerBase_DoTick_Patch), nameof(InvokeWrapper)))
-    ];
+    private static readonly MethodInfo ActionInvokeMethod =
+        AccessTools.Method(typeof(Action), nameof(Action.Invoke));
+
+    private static readonly MethodInfo InvokeWrapperMethod =
+        AccessTools.Method(typeof(InvokeHandlerBase_DoTick_Patch), nameof(InvokeWrapper));
 
     #endregion
 
@@ -60,14 +58,16 @@ internal static class InvokeHandlerBase_DoTick_Patch
 
         try
         {
-            var codeMatcher = new CodeMatcher(instructionsList);
+            var insertionIndex = FindInvokeActionCall(instructionsList);
+            if (insertionIndex < 0)
+            {
+                throw new InvalidOperationException("Unable to find the expected injection point");
+            }
 
-            codeMatcher.MatchStartForward(NeedleSequenceToFind)
-                       .ThrowIfInvalid("Unable to find the expected injection point")
-                       .RemoveInstructions(2)
-                       .InsertAndAdvance(SequenceToInject);
+            instructionsList.RemoveRange(insertionIndex, 2);
+            instructionsList.Insert(insertionIndex, new CodeInstruction(OpCodes.Call, InvokeWrapperMethod));
 
-            return codeMatcher.Instructions();
+            return instructionsList;
         }
         catch (Exception e)
         {
@@ -77,6 +77,25 @@ internal static class InvokeHandlerBase_DoTick_Patch
     }
 
     #endregion
+
+    private static int FindInvokeActionCall(IReadOnlyList<CodeInstruction> instructions)
+    {
+        for (var i = 0; i < instructions.Count - 1; i++)
+        {
+            var current = instructions[i];
+            var next = instructions[i + 1];
+
+            if ((current.opcode == OpCodes.Ldfld || current.opcode == OpCodes.Ldflda) &&
+                Equals(current.operand, InvokeActionField) &&
+                (next.opcode == OpCodes.Call || next.opcode == OpCodes.Callvirt) &&
+                Equals(next.operand, ActionInvokeMethod))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
 
     #region Handler
 
