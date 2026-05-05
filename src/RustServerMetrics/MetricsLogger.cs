@@ -61,7 +61,6 @@ public class MetricsLogger : SingletonComponent<MetricsLogger>
     internal ConfigData Configuration { get; private set; }
 
     private Uri _baseUri;
-    private readonly int _performanceReportRequestId = UnityEngine.Random.Range(-2147483648, 2147483647);
     private ReportUploader _reportUploader;
     private Message.Type _lastMessageType;
     private bool _firstReportGenerated;
@@ -92,17 +91,18 @@ public class MetricsLogger : SingletonComponent<MetricsLogger>
 
     internal void OnServerStarted()
     {
+        if (RustServerMetricsLoader.__serverStarted)
+        {
+            return;
+        }
+
         RustServerMetricsLoader.__serverStarted = true;
             
         Debug.Log($"[ServerMetrics]: Applying Startup Patches");
         var assembly = GetType().Assembly;
 
-        var harmonyInstance = HarmonyLoader.loadedMods.FirstOrDefault(x => x.Assembly == assembly)?.Harmony.harmonyObject;
-        if (harmonyInstance == null)
-        {
-            RustServerMetricsLoader.__harmonyInstance ??= new Harmony("RustServerMetrics" + "PATCH");
-            harmonyInstance = RustServerMetricsLoader.__harmonyInstance;
-        }
+        RustServerMetricsLoader.__harmonyInstance ??= new Harmony("RustServerMetrics" + "PATCH");
+        var harmonyInstance = RustServerMetricsLoader.__harmonyInstance;
 
         var nestedTypes = assembly.GetTypes();
         foreach (var nestedType in nestedTypes)
@@ -114,7 +114,7 @@ public class MetricsLogger : SingletonComponent<MetricsLogger>
         }
     }
 
-    public override void Awake()
+    protected override void Awake()
     {
         base.Awake();
         _reportUploader = gameObject.AddComponent<ReportUploader>();
@@ -220,21 +220,17 @@ public class MetricsLogger : SingletonComponent<MetricsLogger>
         }
     }
 
-    internal bool OnClientPerformanceReport(ClientPerformanceReport clientPerformanceReport)
+    internal void OnClientPerformanceReport(BasePlayer player, int memorySystem, float fps)
     {
-        if (clientPerformanceReport.request_id != _performanceReportRequestId) return false;
-
-        UploadPacket("client_performance", clientPerformanceReport, (builder, report) =>
+        UploadPacket("client_performance", player, (builder, basePlayer) =>
         {
             builder.Append(",steamid=");
-            builder.Append(report.user_id);
+            builder.Append(basePlayer.userID);
             builder.Append(" memory=");
-            builder.Append(report.memory_system);
+            builder.Append(memorySystem);
             builder.Append("i,fps=");
-            builder.Append(report.fps);
+            builder.Append(fps);
         });
-
-        return true;
     }
 
     private void GatherPlayerSecondStats(BasePlayer player)
@@ -249,7 +245,7 @@ public class MetricsLogger : SingletonComponent<MetricsLogger>
             else
             {
                 _perfReportDelayCounter[player.userID] = 0;
-                player.ClientRPCPlayer(null, player, "GetPerformanceReport", "legacy", _performanceReportRequestId);
+                player.ClientRPCPlayer(null, player, "GetPerformanceReport");
             }
         }
 
@@ -260,7 +256,7 @@ public class MetricsLogger : SingletonComponent<MetricsLogger>
             builder.Append(",steamid=");
             builder.Append(basePlayer.UserIDString);
             builder.Append(",ip=");
-            builder.Append(ip[..ip.LastIndexOf(':')]);
+            builder.Append(ip.Substring(0, ip.LastIndexOf(':')));
             builder.Append(" ping=");
             builder.Append(Net.sv.GetAveragePing(basePlayer.net.connection));
             builder.Append("i,packet_loss=");

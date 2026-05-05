@@ -50,7 +50,7 @@ internal static class InvokeHandlerBase_DoTick_Patch
     [HarmonyTargetMethods]
     public static IEnumerable<MethodBase> TargetMethods()
     {
-        yield return AccessTools.DeclaredMethod(typeof(InvokeHandlerBase<InvokeHandler>), nameof(InvokeHandlerBase<InvokeHandler>.DoTick));
+        yield return AccessTools.DeclaredMethod(typeof(InvokeHandlerBase<InvokeHandler>), "DoTick");
     }
 
     [HarmonyTranspiler]

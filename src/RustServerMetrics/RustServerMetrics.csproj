@@ -4,7 +4,7 @@
         <AssemblyName>RustServerMetrics</AssemblyName>
         <ProjectGuid>{3C3A47A5-709A-42BB-B2BF-DB1FA0FEE316}</ProjectGuid>
         <TargetFramework>net48</TargetFramework>
-        <LangVersion>14</LangVersion>
+        <LangVersion>preview</LangVersion>
         <OutputType>Library</OutputType>
         <Nullable>disable</Nullable>
         <AssemblySearchPaths>..\..\dependencies\rust;$(AssemblySearchPaths)</AssemblySearchPaths>
@@ -63,7 +63,6 @@
         <Reference Include="Rust.Data"/>
         <Reference Include="Rust.Demo"/>
         <Reference Include="Rust.Global"/>
-        <Reference Include="Rust.Harmony"/>
         <Reference Include="Rust.Localization"/>
         <Reference Include="Rust.Platform"/>
         <Reference Include="Rust.Platform.Common"/>

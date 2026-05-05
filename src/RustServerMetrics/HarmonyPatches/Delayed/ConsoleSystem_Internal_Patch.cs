@@ -30,7 +30,7 @@ internal class ConsoleSystem_Internal_Patch
     [HarmonyTargetMethods]
     public static IEnumerable<MethodBase> TargetMethods(Harmony harmonyInstance)
     {
-        yield return AccessTools.DeclaredMethod(typeof(ConsoleSystem), nameof(ConsoleSystem.Internal));
+        yield return AccessTools.DeclaredMethod(typeof(ConsoleSystem), "Internal");
     }
 
     [HarmonyPrefix]
