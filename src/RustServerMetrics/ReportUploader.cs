@@ -42,6 +42,11 @@ internal class ReportUploader : MonoBehaviour
     
     public bool IsRunning => _isRunning;
     public int BufferSize => _sendBuffer.Count;
+    public long LastResponseCode { get; private set; }
+    public int LastPayloadBytes { get; private set; }
+    public string LastError { get; private set; } = string.Empty;
+    public DateTime? LastAttemptUtc { get; private set; }
+    public DateTime? LastSuccessUtc { get; private set; }
 
     public ReportUploader()
     {
@@ -102,6 +107,7 @@ internal class ReportUploader : MonoBehaviour
 
             _payloadBuilder.CopyTo(0, _charBuffer, 0, _payloadBuilder.Length);
             _data = Encoding.UTF8.GetBytes(_charBuffer, 0, _payloadBuilder.Length);
+            LastPayloadBytes = _data.Length;
 
             _uri = _metricsLogger.BaseUri;
             _payloadBuilder.Clear();
@@ -121,6 +127,9 @@ internal class ReportUploader : MonoBehaviour
             redirectLimit = 5
         };
         yield return request.SendWebRequest();
+        LastAttemptUtc = DateTime.UtcNow;
+        LastResponseCode = request.responseCode;
+        LastError = request.error ?? string.Empty;
 
         if (request.isNetworkError)
         {
@@ -157,6 +166,11 @@ internal class ReportUploader : MonoBehaviour
                 InvokeHandler.Invoke(this, _notifySubsequentHttpFailuresAction, 5);
                 _throttleHttpErrorMessages = true;
             }
+        }
+        else
+        {
+            LastError = string.Empty;
+            LastSuccessUtc = LastAttemptUtc;
         }
     }
 

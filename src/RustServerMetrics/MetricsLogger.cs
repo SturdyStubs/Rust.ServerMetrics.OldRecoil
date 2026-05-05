@@ -565,6 +565,11 @@ public class MetricsLogger : SingletonComponent<MetricsLogger>
         _stringBuilder.AppendLine("Report Uploader:");
         _stringBuilder.Append("\tRunning: "); _stringBuilder.Append(_reportUploader.IsRunning); _stringBuilder.AppendLine();
         _stringBuilder.Append("\tIn Buffer: "); _stringBuilder.Append(_reportUploader.BufferSize); _stringBuilder.AppendLine();
+        _stringBuilder.Append("\tLast HTTP Code: "); _stringBuilder.Append(_reportUploader.LastResponseCode); _stringBuilder.AppendLine();
+        _stringBuilder.Append("\tLast Payload Bytes: "); _stringBuilder.Append(_reportUploader.LastPayloadBytes); _stringBuilder.AppendLine();
+        _stringBuilder.Append("\tLast Attempt UTC: "); _stringBuilder.Append(_reportUploader.LastAttemptUtc?.ToString("O") ?? "never"); _stringBuilder.AppendLine();
+        _stringBuilder.Append("\tLast Success UTC: "); _stringBuilder.Append(_reportUploader.LastSuccessUtc?.ToString("O") ?? "never"); _stringBuilder.AppendLine();
+        _stringBuilder.Append("\tLast Error: "); _stringBuilder.Append(string.IsNullOrEmpty(_reportUploader.LastError) ? "none" : _reportUploader.LastError); _stringBuilder.AppendLine();
         arg.ReplyWith(_stringBuilder.ToString());
     }
 
