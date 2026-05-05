@@ -104,13 +104,31 @@ public class MetricsLogger : SingletonComponent<MetricsLogger>
         RustServerMetricsLoader.__harmonyInstance ??= new Harmony("RustServerMetrics" + "PATCH");
         var harmonyInstance = RustServerMetricsLoader.__harmonyInstance;
 
-        var nestedTypes = assembly.GetTypes();
+        var nestedTypes = GetLoadableTypes(assembly);
         foreach (var nestedType in nestedTypes)
         {
             if (nestedType.GetCustomAttribute<DelayedHarmonyPatchAttribute>(false) == null) continue;
                 
             var patchProcessor = new PatchClassProcessor((Harmony)harmonyInstance, nestedType);
             Debug.Log(patchProcessor.Patch() == null ? $"[ServerMetrics]: Failed to apply patch: {nestedType.Name}" : $"[ServerMetrics]: Applied Startup Patch: {nestedType.Name}");
+        }
+    }
+
+    private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+    {
+        try
+        {
+            return assembly.GetTypes();
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            Debug.LogWarning($"[ServerMetrics]: Some patch types could not be loaded: {ex.Message}");
+            foreach (var loaderException in ex.LoaderExceptions)
+            {
+                Debug.LogWarning($"[ServerMetrics]: {loaderException.Message}");
+            }
+
+            return ex.Types.Where(type => type != null);
         }
     }
 
