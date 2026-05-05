@@ -42,9 +42,6 @@ internal static class ServerMgr_Metrics_Patches
     {
         MethodBase method;
 
-        method = AccessTools.Method(typeof(ServerMgr), "Update");
-        if (method != null) yield return method;
-
         method = AccessTools.Method(typeof(ServerBuildingManager), "Cycle");
         if (method != null) yield return method;
 
@@ -82,8 +79,8 @@ internal static class ServerMgr_Metrics_Patches
         method = AccessTools.Method(typeof(BaseEntity), nameof(BaseEntity.Spawn));
         if (method != null) yield return method;
 
-        method = AccessTools.Method(typeof(Facepunch.Network.Raknet.Server), nameof(Facepunch.Network.Raknet.Server.Cycle));
-        if (method != null) yield return method;
+        // Patching the outer server/network cycle wrappers is fragile on the old
+        // Mono runtime and can throw "Method has zero rva" during shutdown.
     }
 
     [HarmonyTranspiler]
